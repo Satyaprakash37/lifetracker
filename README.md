@@ -104,3 +104,4 @@ Follow the interactive prompts to link and deploy your project in seconds.
 - **Icons**: Lucide React
 - **Animations**: Canvas Confetti & CSS keyframes
 - **Sound**: Web Audio API Synthesizer
+

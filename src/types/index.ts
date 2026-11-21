@@ -1,4 +1,4 @@
-export type HabitCategory = 'Health' | 'Fitness' | 'Mindset' | 'Productivity' | 'Routine' | 'General';
+export type HabitCategory = 'Project' | 'Fitness' | 'Health' | 'Study' | 'Mindset' | 'Routine' | 'General';
 
 export interface Habit {
   id: string;
@@ -20,7 +20,7 @@ export interface HabitLog {
 export interface DayStats {
   dayNumber: number;
   dateString: string;
-  dayOfWeek: string; // 'M' | 'T' | 'W' | 'T' | 'F' | 'S' | 'S'
+  dayOfWeek: string;
   weekIndex: number; // 0, 1, 2, 3
   completedCount: number;
   totalHabits: number;
@@ -28,8 +28,8 @@ export interface DayStats {
 }
 
 export interface WeekStats {
-  weekIndex: number; // 0 = Week 1, 1 = Week 2, 2 = Week 3, 3 = Week 4
-  title: string; // "week 1", "week 2", "week 3", "week 4"
+  weekIndex: number;
+  title: string;
   startDay: number;
   endDay: number;
   completedChecks: number;
@@ -44,3 +44,20 @@ export interface GameStats {
   soundEnabled: boolean;
 }
 
+export interface SprintConfig {
+  projectName: string;
+  startDate: string; // YYYY-MM-DD
+  totalDays: number; // e.g. 30 days for 1 month sprint
+  targetCompletionPct: number;
+}
+
+export interface UserProfileSettings {
+  userName: string; // e.g. "Satya"
+  voiceEnabled: boolean;
+  voicePitch: number;
+  voiceRate: number;
+  customQuote?: string;
+  remindersEnabled: boolean;
+  reminderTimes: string[]; // e.g. ['09:00', '14:00', '21:00']
+  sprint: SprintConfig;
+}

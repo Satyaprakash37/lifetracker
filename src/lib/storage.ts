@@ -1,12 +1,28 @@
-import { Habit, GameStats } from '@/types';
+import { Habit, GameStats, UserProfileSettings } from '@/types';
 import { DEFAULT_HABITS, generateInitialLogs } from './initialData';
 
-const STORAGE_KEY_HABITS = 'lifetracker_habits_v1';
-const STORAGE_KEY_LOGS = 'lifetracker_logs_v1';
-const STORAGE_KEY_STATS = 'lifetracker_stats_v1';
+const STORAGE_KEY_HABITS = 'lifetracker_habits_v2';
+const STORAGE_KEY_LOGS = 'lifetracker_logs_v2';
+const STORAGE_KEY_STATS = 'lifetracker_stats_v2';
+const STORAGE_KEY_PROFILE = 'lifetracker_profile_v2';
+
+export const DEFAULT_PROFILE: UserProfileSettings = {
+  userName: 'Satya',
+  voiceEnabled: true,
+  voicePitch: 1.05,
+  voiceRate: 1.0,
+  customQuote: 'Good {name}, nice! Keep pushing your limits!',
+  remindersEnabled: true,
+  reminderTimes: ['09:00', '14:00', '21:00'],
+  sprint: {
+    projectName: '1-Month Web Application Launch',
+    startDate: '2026-11-01',
+    totalDays: 30,
+    targetCompletionPct: 85,
+  },
+};
 
 export class StorageService {
-  // Check if browser environment
   private isBrowser(): boolean {
     return typeof window !== 'undefined';
   }
@@ -18,7 +34,6 @@ export class StorageService {
       if (data) {
         return JSON.parse(data);
       }
-      // Initialize with default
       this.saveHabits(DEFAULT_HABITS);
       return DEFAULT_HABITS;
     } catch {
@@ -42,7 +57,6 @@ export class StorageService {
       if (data) {
         return JSON.parse(data);
       }
-      // Initialize with default exact mock data matching screenshot
       const initialLogs = generateInitialLogs(year, month);
       this.saveLogs(initialLogs);
       return initialLogs;
@@ -87,10 +101,32 @@ export class StorageService {
     }
   }
 
+  public getProfile(): UserProfileSettings {
+    if (!this.isBrowser()) return DEFAULT_PROFILE;
+    try {
+      const data = localStorage.getItem(STORAGE_KEY_PROFILE);
+      if (data) return JSON.parse(data);
+      this.saveProfile(DEFAULT_PROFILE);
+      return DEFAULT_PROFILE;
+    } catch {
+      return DEFAULT_PROFILE;
+    }
+  }
+
+  public saveProfile(profile: UserProfileSettings): void {
+    if (!this.isBrowser()) return;
+    try {
+      localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(profile));
+    } catch (e) {
+      console.error('Failed to save profile settings', e);
+    }
+  }
+
   public resetToPhotoPreset(year: number, month: number): {
     habits: Habit[];
     logs: Record<string, boolean>;
     stats: GameStats;
+    profile: UserProfileSettings;
   } {
     const habits = DEFAULT_HABITS;
     const logs = generateInitialLogs(year, month);
@@ -100,12 +136,13 @@ export class StorageService {
       streak: 7,
       soundEnabled: true,
     };
+    const profile = DEFAULT_PROFILE;
     this.saveHabits(habits);
     this.saveLogs(logs);
     this.saveGameStats(stats);
-    return { habits, logs, stats };
+    this.saveProfile(profile);
+    return { habits, logs, stats, profile };
   }
 }
 
 export const storage = new StorageService();
-

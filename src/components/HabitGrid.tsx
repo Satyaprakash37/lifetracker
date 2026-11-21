@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Habit, DayStats } from '@/types';
-import { WEEK_CONFIGS, formatDayKey } from '@/lib/dateUtils';
-import { Check, Plus, Trash2, Edit2, Flame } from 'lucide-react';
+import { Habit, DayStats, HabitCategory } from '@/types';
+import { WEEK_CONFIGS } from '@/lib/dateUtils';
+import { Check, Plus, Trash2, Flame, Laptop, Dumbbell, BookOpen, HeartPulse, Sparkles, Filter } from 'lucide-react';
 
 interface HabitGridProps {
   habits: Habit[];
@@ -14,28 +14,32 @@ interface HabitGridProps {
   onToggleCheck: (habitId: string, dateString: string) => void;
   onAddHabitClick: () => void;
   onDeleteHabit: (habitId: string) => void;
+  selectedCategory: string;
+  onSelectCategory: (cat: string) => void;
 }
 
 export const HabitGrid: React.FC<HabitGridProps> = ({
   habits,
   logs,
   days,
-  year,
-  month,
   onToggleCheck,
   onAddHabitClick,
   onDeleteHabit,
+  selectedCategory,
+  onSelectCategory,
 }) => {
   const [selectedCell, setSelectedCell] = useState<string | null>('h-9_2026-11-10'); // sample active focus like photo
-  const [hoveredHabitId, setHoveredHabitId] = useState<string | null>(null);
 
-  // Group days by week
+  // Filter habits by category
+  const filteredHabits = selectedCategory === 'All'
+    ? habits
+    : habits.filter((h) => h.category === selectedCategory);
+
   const week1Days = days.filter((d) => d.dayNumber >= 1 && d.dayNumber <= 7);
   const week2Days = days.filter((d) => d.dayNumber >= 8 && d.dayNumber <= 14);
   const week3Days = days.filter((d) => d.dayNumber >= 15 && d.dayNumber <= 21);
   const week4Days = days.filter((d) => d.dayNumber >= 22);
 
-  // Helper to calculate habit streak and completion
   const getHabitStats = (habitId: string) => {
     let completedCount = 0;
     days.forEach((d) => {
@@ -47,15 +51,37 @@ export const HabitGrid: React.FC<HabitGridProps> = ({
     return { completedCount, percentage };
   };
 
+  const categories = [
+    { id: 'All', label: 'All Fields' },
+    { id: 'Project', label: '💻 Project' },
+    { id: 'Fitness', label: '🏋️ Gym / Fitness' },
+    { id: 'Study', label: '📚 Study' },
+    { id: 'Health', label: '🥗 Health' },
+    { id: 'Mindset', label: '🧘 Mindset' },
+  ];
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden">
-      {/* Table Action Bar */}
-      <div className="p-4 bg-slate-50/70 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-slate-800 tracking-tight">Monthly Habit Protocol</span>
-          <span className="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-medium">
-            {habits.length} Active Habits
-          </span>
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden mb-6">
+      {/* Category Filter & Actions Bar */}
+      <div className="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center gap-1 text-xs font-bold text-slate-500 mr-1.5">
+            <Filter className="w-3.5 h-3.5" />
+            <span>Filter:</span>
+          </div>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => onSelectCategory(cat.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                selectedCategory === cat.id
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
         </div>
 
         <button
@@ -63,7 +89,7 @@ export const HabitGrid: React.FC<HabitGridProps> = ({
           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all active:scale-95"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Add Habit</span>
+          <span>Add Custom Habit</span>
         </button>
       </div>
 
@@ -74,7 +100,7 @@ export const HabitGrid: React.FC<HabitGridProps> = ({
             {/* Row 1: Week Span Banners */}
             <tr className="border-b border-slate-200">
               <th className="sticky left-0 z-30 bg-slate-100/95 backdrop-blur-sm p-3 min-w-[220px] sm:min-w-[260px] text-xs font-bold text-slate-600 uppercase tracking-wider border-r border-slate-200 shadow-sm">
-                Habit
+                Habit Protocol ({filteredHabits.length})
               </th>
 
               {/* Week 1 Header */}
@@ -117,11 +143,10 @@ export const HabitGrid: React.FC<HabitGridProps> = ({
             {/* Row 2: Weekday Letters (M, T, W, T, F, S, S) */}
             <tr className="bg-slate-50 border-b border-slate-200">
               <th className="sticky left-0 z-30 bg-slate-50/95 backdrop-blur-sm p-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-r border-slate-200">
-                Daily Discipline
+                Daily Focus
               </th>
 
               {days.map((day) => {
-                // Determine week header style
                 let bgStyle = 'bg-slate-50';
                 if (day.dayNumber <= 7) bgStyle = 'bg-[#D6E0F2]/50 text-[#2D3F5E]';
                 else if (day.dayNumber <= 14) bgStyle = 'bg-[#F9D6E1]/50 text-[#5E2B3C]';
@@ -148,7 +173,7 @@ export const HabitGrid: React.FC<HabitGridProps> = ({
             {/* Row 3: Day Numbers (1, 2, 3 ... 31) */}
             <tr className="bg-slate-100/60 border-b border-slate-200 text-slate-600">
               <th className="sticky left-0 z-30 bg-slate-100/95 backdrop-blur-sm p-2 text-[10px] font-medium text-slate-500 border-r border-slate-200">
-                Days
+                Day Numbers
               </th>
 
               {days.map((day) => {
@@ -171,14 +196,12 @@ export const HabitGrid: React.FC<HabitGridProps> = ({
           </thead>
 
           <tbody>
-            {habits.map((habit, habitIndex) => {
-              const { completedCount, percentage } = getHabitStats(habit.id);
+            {filteredHabits.map((habit, habitIndex) => {
+              const { percentage } = getHabitStats(habit.id);
 
               return (
                 <tr
                   key={habit.id}
-                  onMouseEnter={() => setHoveredHabitId(habit.id)}
-                  onMouseLeave={() => setHoveredHabitId(null)}
                   className={`border-b border-slate-100 hover:bg-slate-50/70 transition-colors ${
                     habitIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
                   }`}
@@ -272,10 +295,9 @@ export const HabitGrid: React.FC<HabitGridProps> = ({
           </span>
         </div>
         <span className="text-[11px] text-slate-400 italic">
-          Click any square to toggle checkmark & gain XP
+          Click any square to toggle checkmark, hear voice coach & gain XP
         </span>
       </div>
     </div>
   );
 };
-
