@@ -44,20 +44,33 @@ export interface GameStats {
   soundEnabled: boolean;
 }
 
+export interface Achievement {
+  id: string;
+  title: string;
+  stageLabel: string; // e.g. "Stage 1 (20%)"
+  description: string;
+  icon: string;
+  color: string;
+  requirement: number;
+  type: 'percentage' | 'streak' | 'totalChecks' | 'perfectDay';
+  unlocked: boolean;
+  unlockedAt?: string;
+}
+
 export interface SprintConfig {
   projectName: string;
   startDate: string; // YYYY-MM-DD
-  totalDays: number; // e.g. 30 days for 1 month sprint
+  totalDays: number;
   targetCompletionPct: number;
 }
 
 export interface UserProfileSettings {
-  userName: string; // e.g. "Satya"
+  userName: string;
   voiceEnabled: boolean;
   voicePitch: number;
   voiceRate: number;
   customQuote?: string;
   remindersEnabled: boolean;
-  reminderTimes: string[]; // e.g. ['09:00', '14:00', '21:00']
+  reminderTimes: string[];
   sprint: SprintConfig;
 }

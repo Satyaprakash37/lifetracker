@@ -2,14 +2,17 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Habit, GameStats, HabitCategory, UserProfileSettings } from '@/types';
+import { Habit, GameStats, HabitCategory, UserProfileSettings, Achievement } from '@/types';
 import { storage, DEFAULT_PROFILE } from '@/lib/storage';
 import { sound } from '@/lib/sound';
 import { voiceCoach } from '@/lib/voice';
 import { notifier } from '@/lib/notifications';
+import { achievementService } from '@/lib/achievements';
 import { calculateStats, formatDayKey } from '@/lib/dateUtils';
 import { Header, TrackerView } from '@/components/Header';
 import { GamificationBar } from '@/components/GamificationBar';
+import { AchievementsShowcase } from '@/components/AchievementsShowcase';
+import { AchievementUnlockedModal } from '@/components/AchievementUnlockedModal';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { WeekDetailView } from '@/components/WeekDetailView';
 import { HabitGrid } from '@/components/HabitGrid';
@@ -26,6 +29,8 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<Record<string, boolean>>({});
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [newlyUnlockedBadge, setNewlyUnlockedBadge] = useState<Achievement | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfileSettings>(DEFAULT_PROFILE);
   const [gameStats, setGameStats] = useState<GameStats>({
     xp: 690,
@@ -44,11 +49,13 @@ export default function HomePage() {
     const loadedLogs = storage.getLogs(currentYear, currentMonth);
     const loadedStats = storage.getGameStats();
     const loadedProfile = storage.getProfile();
+    const loadedAchievements = achievementService.getAchievements();
 
     setHabits(loadedHabits);
     setLogs(loadedLogs);
     setGameStats(loadedStats);
     setUserProfile(loadedProfile);
+    setAchievements(loadedAchievements);
     sound.setEnabled(loadedStats.soundEnabled);
     voiceCoach.configure({
       enabled: loadedProfile.voiceEnabled,
@@ -105,12 +112,6 @@ export default function HomePage() {
       // Play audio feedback
       sound.playCheck(nextState);
 
-      // Voice encouragement on check
-      if (nextState && userProfile.voiceEnabled) {
-        const habit = habits.find((h) => h.id === habitId);
-        voiceCoach.speakTaskCompletion(habit ? habit.title : 'Task', userProfile.customQuote);
-      }
-
       const nextLogs = {
         ...logs,
         [cellKey]: nextState,
@@ -133,14 +134,53 @@ export default function HomePage() {
       setGameStats(nextStats);
       storage.saveGameStats(nextStats);
 
+      // Calculate new overall percentage for achievement unlocks
+      const nextStatsObj = calculateStats(habits, nextLogs, currentYear, currentMonth);
+      const hasAnyPerfectDay = nextStatsObj.days.some((d) => d.percentage === 100);
+
+      // Check for newly unlocked milestone badges (e.g. 20%, 40%, 60%, 80%, 100%)
+      const { updatedList, newlyUnlocked } = achievementService.checkUnlocks(
+        nextStatsObj.overallPercentage,
+        gameStats.streak,
+        nextStatsObj.totalChecks,
+        hasAnyPerfectDay
+      );
+
+      setAchievements(updatedList);
+
+      if (newlyUnlocked.length > 0) {
+        // Trigger celebratory badge unlock!
+        const badge = newlyUnlocked[0];
+        setNewlyUnlockedBadge(badge);
+        sound.playCelebration();
+        try {
+          confetti({
+            particleCount: 110,
+            spread: 75,
+            origin: { y: 0.55 },
+            colors: ['#F59E0B', '#FBBF24', '#10B981', '#6366F1', '#EC4899'],
+          });
+        } catch {}
+
+        if (userProfile.voiceEnabled) {
+          voiceCoach.speak(
+            `Congratulations ${userProfile.userName}! You just unlocked the ${badge.title} badge for reaching ${badge.stageLabel}! Awesome discipline!`
+          );
+        }
+      } else if (nextState && userProfile.voiceEnabled) {
+        // Regular task voice encouragement
+        const habit = habits.find((h) => h.id === habitId);
+        voiceCoach.speakTaskCompletion(habit ? habit.title : 'Task', userProfile.customQuote);
+      }
+
       // Check if 100% of day completed
       if (nextState) {
         const dayHabitsCompleted = habits.filter((h) => {
           if (h.id === habitId) return true;
-          return !!logs[`${h.id}_${dateString}`];
+          return !!nextLogs[`${h.id}_${dateString}`];
         }).length;
 
-        if (dayHabitsCompleted === habits.length && habits.length > 0) {
+        if (dayHabitsCompleted === habits.length && habits.length > 0 && newlyUnlocked.length === 0) {
           sound.playCelebration();
           voiceCoach.speakDayGoalAchieved();
           try {
@@ -150,9 +190,7 @@ export default function HomePage() {
               origin: { y: 0.65 },
               colors: ['#6B8AFE', '#D46187', '#4FA67B', '#E0934A', '#FBBF24'],
             });
-          } catch {
-            // fallback
-          }
+          } catch {}
         }
       }
 
@@ -163,10 +201,10 @@ export default function HomePage() {
         body: JSON.stringify({ habitId, date: dateString, completed: nextState }),
       }).catch(() => {});
     },
-    [logs, gameStats, habits, userProfile]
+    [logs, gameStats, habits, userProfile, currentYear, currentMonth]
   );
 
-  // Quick Name Update (e.g. from Satya to Abhijit)
+  // Quick Name Update
   const handleUpdateName = (newName: string) => {
     const updated = {
       ...userProfile,
@@ -177,7 +215,6 @@ export default function HomePage() {
     voiceCoach.configure({
       name: newName,
     });
-    // Immediately speak to confirm new name
     voiceCoach.testPreview(newName);
   };
 
@@ -308,6 +345,13 @@ export default function HomePage() {
       {/* Gamification Level & XP Bar */}
       <GamificationBar stats={gameStats} todayCompletion={todayCompletion} />
 
+      {/* Discipline Badges & Milestones Showcase Bar */}
+      <AchievementsShowcase
+        achievements={achievements}
+        overallPercentage={overallPercentage}
+        userName={userProfile.userName}
+      />
+
       {/* VIEW 1: Month Matrix (Exact Photo Analytics & Full Checkbox Grid) */}
       {activeView === 'month' && (
         <>
@@ -347,6 +391,13 @@ export default function HomePage() {
         />
       )}
 
+      {/* Celebratory Achievement Unlocked Modal */}
+      <AchievementUnlockedModal
+        achievement={newlyUnlockedBadge}
+        userName={userProfile.userName}
+        onClose={() => setNewlyUnlockedBadge(null)}
+      />
+
       {/* Modals */}
       <UserSettingsModal
         isOpen={isSettingsOpen}
@@ -371,7 +422,7 @@ export default function HomePage() {
         <div className="flex items-center gap-2">
           <span>LifeTracker for <strong>{userProfile.userName}</strong></span>
           <span>•</span>
-          <span className="text-slate-500 font-medium">Habit Matrix & Visual Discipline Engine</span>
+          <span className="text-slate-500 font-medium">Habit Matrix & Stage Badge Achievements</span>
         </div>
         <div className="flex items-center gap-2">
           <button
