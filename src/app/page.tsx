@@ -5,7 +5,6 @@ import confetti from 'canvas-confetti';
 import { Habit, GameStats, HabitCategory, UserProfileSettings, Achievement } from '@/types';
 import { storage, DEFAULT_PROFILE } from '@/lib/storage';
 import { sound } from '@/lib/sound';
-import { voiceCoach } from '@/lib/voice';
 import { notifier } from '@/lib/notifications';
 import { achievementService } from '@/lib/achievements';
 import { calculateStats, formatDayKey } from '@/lib/dateUtils';
@@ -57,11 +56,6 @@ export default function HomePage() {
     setUserProfile(loadedProfile);
     setAchievements(loadedAchievements);
     sound.setEnabled(loadedStats.soundEnabled);
-    voiceCoach.configure({
-      enabled: loadedProfile.voiceEnabled,
-      name: loadedProfile.userName,
-      rate: loadedProfile.voiceRate,
-    });
     setMounted(true);
 
     // Initial check with backend API
@@ -82,7 +76,7 @@ export default function HomePage() {
       if (userProfile.reminderTimes.includes(timeStr)) {
         notifier.sendNotification(
           `🎯 LifeTracker Reminder for ${userProfile.userName}!`,
-          `Time to check your habits, gym, and study targets for today!`
+          `Time to check off your habits for today!`
         );
       }
     }, 60000);
@@ -109,7 +103,7 @@ export default function HomePage() {
       const wasCompleted = !!logs[cellKey];
       const nextState = !wasCompleted;
 
-      // Play audio feedback
+      // Play pleasant tactile audio feedback
       sound.playCheck(nextState);
 
       const nextLogs = {
@@ -138,7 +132,7 @@ export default function HomePage() {
       const nextStatsObj = calculateStats(habits, nextLogs, currentYear, currentMonth);
       const hasAnyPerfectDay = nextStatsObj.days.some((d) => d.percentage === 100);
 
-      // Check for newly unlocked milestone badges (e.g. 20%, 40%, 60%, 80%, 100%)
+      // Check for newly unlocked milestone badges
       const { updatedList, newlyUnlocked } = achievementService.checkUnlocks(
         nextStatsObj.overallPercentage,
         gameStats.streak,
@@ -161,16 +155,6 @@ export default function HomePage() {
             colors: ['#F59E0B', '#FBBF24', '#10B981', '#6366F1', '#EC4899'],
           });
         } catch {}
-
-        if (userProfile.voiceEnabled) {
-          voiceCoach.speak(
-            `Congratulations ${userProfile.userName}! You just unlocked the ${badge.title} badge for reaching ${badge.stageLabel}! Awesome discipline!`
-          );
-        }
-      } else if (nextState && userProfile.voiceEnabled) {
-        // Regular task voice encouragement
-        const habit = habits.find((h) => h.id === habitId);
-        voiceCoach.speakTaskCompletion(habit ? habit.title : 'Task', userProfile.customQuote);
       }
 
       // Check if 100% of day completed
@@ -182,7 +166,6 @@ export default function HomePage() {
 
         if (dayHabitsCompleted === habits.length && habits.length > 0 && newlyUnlocked.length === 0) {
           sound.playCelebration();
-          voiceCoach.speakDayGoalAchieved();
           try {
             confetti({
               particleCount: 80,
@@ -212,14 +195,6 @@ export default function HomePage() {
     };
     setUserProfile(updated);
     storage.saveProfile(updated);
-    voiceCoach.configure({
-      name: newName,
-    });
-    voiceCoach.testPreview(newName);
-  };
-
-  const handleTestVoice = () => {
-    voiceCoach.testPreview(userProfile.userName);
   };
 
   // Toggle Sound
@@ -283,11 +258,6 @@ export default function HomePage() {
   const handleSaveProfile = (updated: UserProfileSettings) => {
     setUserProfile(updated);
     storage.saveProfile(updated);
-    voiceCoach.configure({
-      enabled: updated.voiceEnabled,
-      name: updated.userName,
-      rate: updated.voiceRate,
-    });
   };
 
   // Month Navigation
@@ -327,10 +297,8 @@ export default function HomePage() {
         currentMonth={currentMonth}
         currentYear={currentYear}
         soundEnabled={gameStats.soundEnabled}
-        voiceEnabled={userProfile.voiceEnabled}
         userName={userProfile.userName}
         onUpdateName={handleUpdateName}
-        onTestVoice={handleTestVoice}
         activeView={activeView}
         onChangeView={setActiveView}
         onToggleSound={handleToggleSound}
@@ -374,6 +342,7 @@ export default function HomePage() {
             onDeleteHabit={handleDeleteHabit}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
+            antiCheatEnabled={userProfile.antiCheatEnabled ?? true}
           />
         </>
       )}
@@ -429,7 +398,7 @@ export default function HomePage() {
             onClick={() => setIsSettingsOpen(true)}
             className="hover:text-slate-600 underline font-medium"
           >
-            Voice & Reminder Settings
+            Settings
           </button>
           <span>•</span>
           <button

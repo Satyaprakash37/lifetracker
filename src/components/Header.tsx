@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, RotateCcw, Calendar, Database, Sparkles, HelpCircle, User, Bell, LayoutGrid, CalendarRange, Check, Edit2 } from 'lucide-react';
+import { Volume2, VolumeX, RotateCcw, Calendar, Database, Sparkles, HelpCircle, User, Bell, LayoutGrid, CalendarRange } from 'lucide-react';
 
 export type TrackerView = 'month' | 'week';
 
@@ -9,10 +9,8 @@ interface HeaderProps {
   currentMonth: number;
   currentYear: number;
   soundEnabled: boolean;
-  voiceEnabled: boolean;
   userName: string;
   onUpdateName: (newName: string) => void;
-  onTestVoice: () => void;
   activeView: TrackerView;
   onChangeView: (view: TrackerView) => void;
   onToggleSound: () => void;
@@ -28,10 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   currentMonth,
   currentYear,
   soundEnabled,
-  voiceEnabled,
   userName,
   onUpdateName,
-  onTestVoice,
   activeView,
   onChangeView,
   onToggleSound,
@@ -43,14 +39,12 @@ export const Header: React.FC<HeaderProps> = ({
   isCloudSynced,
 }) => {
   const [editingName, setEditingName] = useState(userName);
-  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     setEditingName(userName);
   }, [userName]);
 
   const handleNameBlur = () => {
-    setIsEditing(false);
     const trimmed = editingName.trim();
     if (trimmed && trimmed !== userName) {
       onUpdateName(trimmed);
@@ -86,19 +80,19 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-500 font-medium">
-              Gamified habit tracker • Personalized voice coaching & consistency analytics
+              Gamified habit matrix • Visual consistency analytics & stage milestones
             </p>
           </div>
         </div>
 
         {/* User Profile & Actions */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Quick Name Changer Box (e.g. Satya, Abhijit, or whatever name) */}
+          {/* Quick Name Changer Box */}
           <div className="flex items-center gap-2 bg-indigo-50/80 border border-indigo-200 px-3 py-1.5 rounded-xl shadow-2xs">
             <User className="w-4 h-4 text-indigo-600 shrink-0" />
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
-                Name:
+                User:
               </span>
               <input
                 type="text"
@@ -107,20 +101,10 @@ export const Header: React.FC<HeaderProps> = ({
                 onBlur={handleNameBlur}
                 onKeyDown={handleNameKeyDown}
                 placeholder="Enter Name"
-                title="Type your name (e.g. Abhijit) and press Enter"
+                title="Type your name and press Enter to save"
                 className="w-24 sm:w-28 text-xs font-bold text-slate-900 bg-white border border-indigo-300 focus:border-indigo-600 rounded-md px-2 py-0.5 focus:outline-none shadow-2xs"
               />
             </div>
-
-            {/* Test Voice Button */}
-            <button
-              onClick={onTestVoice}
-              title={`Test voice affirmation for ${userName}`}
-              className="p-1 hover:bg-indigo-200/70 text-indigo-700 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-semibold"
-            >
-              <Volume2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Say &quot;Good {userName}, nice!&quot;</span>
-            </button>
           </div>
 
           {/* Month Selector */}
@@ -161,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
             <HelpCircle className="w-4 h-4" />
           </button>
 
-          {/* Sound FX Toggle */}
+          {/* Sound FX Toggle (Tactile Click Dings) */}
           <button
             onClick={onToggleSound}
             className={`p-2 rounded-xl border transition-all ${

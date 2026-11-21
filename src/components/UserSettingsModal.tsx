@@ -2,9 +2,8 @@
 
 import React, { useState } from 'react';
 import { UserProfileSettings } from '@/types';
-import { voiceCoach } from '@/lib/voice';
 import { notifier } from '@/lib/notifications';
-import { X, User, Volume2, Bell, Sparkles, Check, Play, Send } from 'lucide-react';
+import { X, User, Bell, Check, Send } from 'lucide-react';
 
 interface UserSettingsModalProps {
   isOpen: boolean;
@@ -20,21 +19,11 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
   onSave,
 }) => {
   const [userName, setUserName] = useState(profile.userName);
-  const [voiceEnabled, setVoiceEnabled] = useState(profile.voiceEnabled);
-  const [customQuote, setCustomQuote] = useState(profile.customQuote || 'Good {name}, nice! Keep pushing your limits!');
-  const [voiceRate, setVoiceRate] = useState(profile.voiceRate || 1.0);
   const [remindersEnabled, setRemindersEnabled] = useState(profile.remindersEnabled);
   const [antiCheatEnabled, setAntiCheatEnabled] = useState(profile.antiCheatEnabled ?? true);
-  const [projectName, setProjectName] = useState(profile.sprint.projectName);
-  const [totalDays, setTotalDays] = useState(profile.sprint.totalDays);
   const [testNotificationSent, setTestNotificationSent] = useState(false);
 
   if (!isOpen) return null;
-
-  const handleTestVoice = () => {
-    voiceCoach.configure({ enabled: true, name: userName, rate: voiceRate });
-    voiceCoach.testPreview(userName);
-  };
 
   const handleTestNotification = async () => {
     const granted = await notifier.requestPermission();
@@ -52,23 +41,9 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
     const updated: UserProfileSettings = {
       ...profile,
       userName: userName.trim() || 'Satya',
-      voiceEnabled,
-      customQuote: customQuote.trim(),
-      voiceRate,
       remindersEnabled,
       antiCheatEnabled,
-      sprint: {
-        ...profile.sprint,
-        projectName: projectName.trim() || '1-Month Web Application Launch',
-        totalDays: Number(totalDays) || 30,
-      },
     };
-
-    voiceCoach.configure({
-      enabled: voiceEnabled,
-      name: updated.userName,
-      rate: voiceRate,
-    });
 
     onSave(updated);
     onClose();
@@ -84,8 +59,8 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
               <User className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Personalize Your LifeTracker</h2>
-              <p className="text-xs text-slate-500">Custom voice coach, reminders & sprint goals</p>
+              <h2 className="text-base font-bold text-slate-900">LifeTracker Settings</h2>
+              <p className="text-xs text-slate-500">Configure profile, reminders & anti-cheat</p>
             </div>
           </div>
           <button
@@ -100,77 +75,28 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
           {/* 1. Name Field */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-              Your Name (Used in Voice & Motivation)
+              Your Name
             </label>
             <input
               type="text"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
-              placeholder="e.g. Satya"
+              placeholder="e.g. Abhijit, Satya"
               required
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 font-semibold"
             />
             <span className="text-[11px] text-slate-400 mt-1 block">
-              The assistant will say: &quot;Good {userName || 'Satya'}, nice! Target completed!&quot;
+              Personalizes your dashboard and achievement badge awards.
             </span>
           </div>
 
-          {/* 2. Voice Coach Section */}
-          <div className="p-4 rounded-xl bg-indigo-50/60 border border-indigo-100 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Volume2 className="w-4 h-4 text-indigo-600" />
-                <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                  Positive Voice Message Coach
-                </span>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={voiceEnabled}
-                  onChange={(e) => setVoiceEnabled(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-              </label>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                Custom Positive Affirmation Quote
-              </label>
-              <input
-                type="text"
-                value={customQuote}
-                onChange={(e) => setCustomQuote(e.target.value)}
-                placeholder="Good {name}, nice! Keep pushing your limits!"
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white text-slate-800"
-              />
-              <span className="text-[10px] text-slate-400 mt-0.5 block">
-                Use <code>{'{name}'}</code> to automatically insert your name.
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-xs text-slate-600 font-medium">Test voice message:</span>
-              <button
-                type="button"
-                onClick={handleTestVoice}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-all active:scale-95"
-              >
-                <Play className="w-3.5 h-3.5 fill-white" />
-                <span>Hear Voice Preview</span>
-              </button>
-            </div>
-          </div>
-
-          {/* 3. Smart Reminders & Notifications */}
+          {/* 2. Smart Reminders & Notifications */}
           <div className="p-4 rounded-xl bg-amber-50/60 border border-amber-100 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Bell className="w-4 h-4 text-amber-600" />
                 <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                  Daily Habit & Project Reminders
+                  Daily Habit Reminders
                 </span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -185,7 +111,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             </div>
 
             <p className="text-xs text-slate-600">
-              Get desktop alerts throughout the day to keep your gym, study, and project progress on pace!
+              Receive desktop alerts throughout the day to keep your habit consistency high.
             </p>
 
             <div className="flex items-center justify-between pt-1">
@@ -201,7 +127,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             </div>
           </div>
 
-          {/* 4. Anti-Cheat & Serial Progression Guard */}
+          {/* 3. Anti-Cheat & Serial Progression Guard */}
           <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-100 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -223,42 +149,6 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             <p className="text-xs text-slate-600">
               Prevents cheating and skipping stages: Badges unlock strictly in order (Stage 1 → Stage 2 → Stage 3), and future calendar days are locked.
             </p>
-          </div>
-
-          {/* 4. 1-Month Project Sprint Config */}
-          <div className="space-y-3 pt-2 border-t border-slate-100">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-              1-Month Project Sprint Goal
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="sm:col-span-2">
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  Project Title / Mission
-                </label>
-                <input
-                  type="text"
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                  placeholder="e.g. 1-Month Web App Launch"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-slate-800"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  Sprint Duration
-                </label>
-                <input
-                  type="number"
-                  min="7"
-                  max="60"
-                  value={totalDays}
-                  onChange={(e) => setTotalDays(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-slate-800"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Action buttons */}
@@ -283,4 +173,3 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
     </div>
   );
 };
-
