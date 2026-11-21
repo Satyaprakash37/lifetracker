@@ -14,6 +14,7 @@ export const DEFAULT_PROFILE: UserProfileSettings = {
   customQuote: 'Good {name}, nice! Keep pushing your limits!',
   remindersEnabled: true,
   reminderTimes: ['09:00', '14:00', '21:00'],
+  antiCheatEnabled: true,
   sprint: {
     projectName: '1-Month Web Application Launch',
     startDate: '2026-11-01',

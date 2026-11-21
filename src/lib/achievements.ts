@@ -1,11 +1,12 @@
 import { Achievement } from '@/types';
 
 export const INITIAL_ACHIEVEMENTS: Achievement[] = [
-  // 1. Stage 1: 20% Milestone (Specifically requested by user)
+  // 1. Stage 1: 20% Milestone (Strictly Order 1)
   {
     id: 'stage_20',
     title: 'Ignition Spark',
     stageLabel: 'Stage 1 (20%)',
+    stageOrder: 1,
     description: 'Broke past 20% overall consistency! Momentum initiated.',
     icon: '🥉',
     color: 'from-amber-600 to-yellow-500',
@@ -13,59 +14,68 @@ export const INITIAL_ACHIEVEMENTS: Achievement[] = [
     type: 'percentage',
     unlocked: false,
   },
-  // 2. Stage 2: 40% Milestone
+  // 2. Stage 2: 40% Milestone (Prerequisite: Stage 1)
   {
     id: 'stage_40',
     title: 'Momentum Builder',
     stageLabel: 'Stage 2 (40%)',
-    description: 'Reached 40% protocol completion! Your daily habits are locking in.',
+    stageOrder: 2,
+    prerequisiteId: 'stage_20',
+    description: 'Reached 40% protocol completion! Prerequisite: Stage 1 must be completed.',
     icon: '🥈',
     color: 'from-slate-400 to-slate-200',
     requirement: 40,
     type: 'percentage',
     unlocked: false,
   },
-  // 3. Stage 3: 60% Milestone
+  // 3. Stage 3: 60% Milestone (Prerequisite: Stage 2)
   {
     id: 'stage_60',
     title: 'Discipline Titan',
     stageLabel: 'Stage 3 (60%)',
-    description: 'Over 60% consistency achieved! More than halfway to total mastery.',
+    stageOrder: 3,
+    prerequisiteId: 'stage_40',
+    description: 'Over 60% consistency achieved! Prerequisite: Stage 2 must be completed.',
     icon: '🥇',
     color: 'from-amber-500 to-yellow-400',
     requirement: 60,
     type: 'percentage',
     unlocked: false,
   },
-  // 4. Stage 4: 80% Milestone
+  // 4. Stage 4: 80% Milestone (Prerequisite: Stage 3)
   {
     id: 'stage_80',
     title: 'Elite Performer',
     stageLabel: 'Stage 4 (80%)',
-    description: 'Cruising past 80%! You are operating in the top tier of consistency.',
+    stageOrder: 4,
+    prerequisiteId: 'stage_60',
+    description: 'Cruising past 80%! Prerequisite: Stage 3 must be completed.',
     icon: '💎',
     color: 'from-cyan-400 to-blue-500',
     requirement: 80,
     type: 'percentage',
     unlocked: false,
   },
-  // 5. Stage 5: 100% Milestone
+  // 5. Stage 5: 100% Milestone (Prerequisite: Stage 4)
   {
     id: 'stage_100',
     title: 'Unstoppable Legend',
     stageLabel: 'Stage 5 (100%)',
-    description: 'Flawless 100% completion! Absolute discipline mastery achieved.',
+    stageOrder: 5,
+    prerequisiteId: 'stage_80',
+    description: 'Flawless 100% completion! Prerequisite: Stage 4 must be completed.',
     icon: '👑',
     color: 'from-yellow-400 via-amber-300 to-yellow-500',
     requirement: 100,
     type: 'percentage',
     unlocked: false,
   },
-  // Streak Badges
+  // Streak Badges (Serial order 1, 2)
   {
     id: 'streak_3',
     title: '3-Day Fire',
     stageLabel: 'Streak Badge',
+    stageOrder: 10,
     description: 'Maintained 3 consecutive days of discipline without dropping.',
     icon: '🔥',
     color: 'from-orange-500 to-red-500',
@@ -77,7 +87,9 @@ export const INITIAL_ACHIEVEMENTS: Achievement[] = [
     id: 'streak_7',
     title: '7-Day Iron Will',
     stageLabel: 'Streak Badge',
-    description: 'A full 7-day week of unwavering consistency completed.',
+    stageOrder: 11,
+    prerequisiteId: 'streak_3',
+    description: 'Full 7-day week of discipline. Prerequisite: 3-Day streak required.',
     icon: '⚡',
     color: 'from-indigo-500 to-purple-600',
     requirement: 7,
@@ -89,6 +101,7 @@ export const INITIAL_ACHIEVEMENTS: Achievement[] = [
     id: 'perfect_day',
     title: 'Flawless Day',
     stageLabel: 'Daily Master',
+    stageOrder: 20,
     description: 'Completed 100% of all habits on a single calendar day.',
     icon: '🌟',
     color: 'from-emerald-400 to-teal-500',
@@ -96,12 +109,13 @@ export const INITIAL_ACHIEVEMENTS: Achievement[] = [
     type: 'perfectDay',
     unlocked: false,
   },
-  // Century Club (100 total checks)
+  // Century Club
   {
     id: 'century_100',
     title: 'Century Club',
     stageLabel: 'Volume Badge',
-    description: 'Checked off 100 total habit tasks this month.',
+    stageOrder: 30,
+    description: 'Checked off 100 total habit tasks authentically.',
     icon: '🎯',
     color: 'from-rose-500 to-pink-600',
     requirement: 100,
@@ -110,7 +124,7 @@ export const INITIAL_ACHIEVEMENTS: Achievement[] = [
   },
 ];
 
-const STORAGE_KEY_ACHIEVEMENTS = 'lifetracker_achievements_v1';
+const STORAGE_KEY_ACHIEVEMENTS = 'lifetracker_achievements_v2';
 
 export class AchievementService {
   private isBrowser(): boolean {
@@ -138,7 +152,7 @@ export class AchievementService {
     }
   }
 
-  // Evaluates state and returns newly unlocked badges (if any)
+  // Strict Serial Anti-Fraud Check
   public checkUnlocks(
     overallPercentage: number,
     streak: number,
@@ -148,27 +162,41 @@ export class AchievementService {
     const currentList = this.getAchievements();
     const newlyUnlocked: Achievement[] = [];
 
-    const updatedList = currentList.map((item) => {
+    // Sort stages by strict stageOrder so Stage 1 must be evaluated before Stage 2
+    const sortedList = [...currentList].sort((a, b) => a.stageOrder - b.stageOrder);
+    const unlockedMap = new Map<string, boolean>();
+    sortedList.forEach((a) => unlockedMap.set(a.id, a.unlocked));
+
+    const updatedList = sortedList.map((item) => {
       if (item.unlocked) return item;
 
-      let shouldUnlock = false;
-
-      if (item.type === 'percentage') {
-        shouldUnlock = overallPercentage >= item.requirement;
-      } else if (item.type === 'streak') {
-        shouldUnlock = streak >= item.requirement;
-      } else if (item.type === 'totalChecks') {
-        shouldUnlock = totalChecks >= item.requirement;
-      } else if (item.type === 'perfectDay') {
-        shouldUnlock = hasAnyPerfectDay;
+      // ANTI-CHEAT RULE 1: Check prerequisite badge
+      if (item.prerequisiteId && !unlockedMap.get(item.prerequisiteId)) {
+        // Cannot unlock if previous stage is still locked! No skipping stages.
+        return item;
       }
 
-      if (shouldUnlock) {
+      let meetsRequirement = false;
+
+      if (item.type === 'percentage') {
+        meetsRequirement = overallPercentage >= item.requirement;
+      } else if (item.type === 'streak') {
+        meetsRequirement = streak >= item.requirement;
+      } else if (item.type === 'totalChecks') {
+        meetsRequirement = totalChecks >= item.requirement;
+      } else if (item.type === 'perfectDay') {
+        meetsRequirement = hasAnyPerfectDay;
+      }
+
+      // ANTI-CHEAT RULE 2: Allow unlocking only if requirement is strictly met and prerequisite is clear
+      if (meetsRequirement && newlyUnlocked.length === 0) {
+        // Unlock this stage
         const unlockedItem: Achievement = {
           ...item,
           unlocked: true,
           unlockedAt: new Date().toLocaleDateString(),
         };
+        unlockedMap.set(item.id, true);
         newlyUnlocked.push(unlockedItem);
         return unlockedItem;
       }

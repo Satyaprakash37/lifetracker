@@ -76,3 +76,4 @@ export const AchievementUnlockedModal: React.FC<AchievementUnlockedModalProps> =
     </div>
   );
 };
+

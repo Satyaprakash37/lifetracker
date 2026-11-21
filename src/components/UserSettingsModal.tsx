@@ -24,6 +24,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
   const [customQuote, setCustomQuote] = useState(profile.customQuote || 'Good {name}, nice! Keep pushing your limits!');
   const [voiceRate, setVoiceRate] = useState(profile.voiceRate || 1.0);
   const [remindersEnabled, setRemindersEnabled] = useState(profile.remindersEnabled);
+  const [antiCheatEnabled, setAntiCheatEnabled] = useState(profile.antiCheatEnabled ?? true);
   const [projectName, setProjectName] = useState(profile.sprint.projectName);
   const [totalDays, setTotalDays] = useState(profile.sprint.totalDays);
   const [testNotificationSent, setTestNotificationSent] = useState(false);
@@ -55,6 +56,7 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
       customQuote: customQuote.trim(),
       voiceRate,
       remindersEnabled,
+      antiCheatEnabled,
       sprint: {
         ...profile.sprint,
         projectName: projectName.trim() || '1-Month Web Application Launch',
@@ -197,6 +199,30 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                 <span>{testNotificationSent ? 'Sent!' : 'Send Test Alert'}</span>
               </button>
             </div>
+          </div>
+
+          {/* 4. Anti-Cheat & Serial Progression Guard */}
+          <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-100 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🛡️</span>
+                <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                  Anti-Cheat & Serial Progression Guard
+                </span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={antiCheatEnabled}
+                  onChange={(e) => setAntiCheatEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+            <p className="text-xs text-slate-600">
+              Prevents cheating and skipping stages: Badges unlock strictly in order (Stage 1 → Stage 2 → Stage 3), and future calendar days are locked.
+            </p>
           </div>
 
           {/* 4. 1-Month Project Sprint Config */}

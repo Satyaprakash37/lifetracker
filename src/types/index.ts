@@ -48,6 +48,8 @@ export interface Achievement {
   id: string;
   title: string;
   stageLabel: string; // e.g. "Stage 1 (20%)"
+  stageOrder: number; // 1, 2, 3, 4, 5 (Strict serial order)
+  prerequisiteId?: string; // Must unlock this badge first
   description: string;
   icon: string;
   color: string;
@@ -59,7 +61,7 @@ export interface Achievement {
 
 export interface SprintConfig {
   projectName: string;
-  startDate: string; // YYYY-MM-DD
+  startDate: string;
   totalDays: number;
   targetCompletionPct: number;
 }
@@ -72,5 +74,6 @@ export interface UserProfileSettings {
   customQuote?: string;
   remindersEnabled: boolean;
   reminderTimes: string[];
+  antiCheatEnabled: boolean; // Anti-cheat strict discipline mode
   sprint: SprintConfig;
 }
