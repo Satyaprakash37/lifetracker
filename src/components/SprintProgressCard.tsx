@@ -195,3 +195,4 @@ export const SprintProgressCard: React.FC<SprintProgressCardProps> = ({
     </div>
   );
 };
+

@@ -173,3 +173,4 @@ export const WeekDetailView: React.FC<WeekDetailViewProps> = ({
     </div>
   );
 };
+

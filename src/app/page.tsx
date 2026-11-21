@@ -11,7 +11,6 @@ import { calculateStats, formatDayKey } from '@/lib/dateUtils';
 import { Header, TrackerView } from '@/components/Header';
 import { GamificationBar } from '@/components/GamificationBar';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
-import { SprintProgressCard } from '@/components/SprintProgressCard';
 import { WeekDetailView } from '@/components/WeekDetailView';
 import { HabitGrid } from '@/components/HabitGrid';
 import { AddHabitModal } from '@/components/AddHabitModal';
@@ -76,7 +75,7 @@ export default function HomePage() {
       if (userProfile.reminderTimes.includes(timeStr)) {
         notifier.sendNotification(
           `🎯 LifeTracker Reminder for ${userProfile.userName}!`,
-          `Time to check your project sprint, gym, and study targets for today!`
+          `Time to check your habits, gym, and study targets for today!`
         );
       }
     }, 60000);
@@ -166,6 +165,25 @@ export default function HomePage() {
     },
     [logs, gameStats, habits, userProfile]
   );
+
+  // Quick Name Update (e.g. from Satya to Abhijit)
+  const handleUpdateName = (newName: string) => {
+    const updated = {
+      ...userProfile,
+      userName: newName,
+    };
+    setUserProfile(updated);
+    storage.saveProfile(updated);
+    voiceCoach.configure({
+      name: newName,
+    });
+    // Immediately speak to confirm new name
+    voiceCoach.testPreview(newName);
+  };
+
+  const handleTestVoice = () => {
+    voiceCoach.testPreview(userProfile.userName);
+  };
 
   // Toggle Sound
   const handleToggleSound = () => {
@@ -274,6 +292,8 @@ export default function HomePage() {
         soundEnabled={gameStats.soundEnabled}
         voiceEnabled={userProfile.voiceEnabled}
         userName={userProfile.userName}
+        onUpdateName={handleUpdateName}
+        onTestVoice={handleTestVoice}
         activeView={activeView}
         onChangeView={setActiveView}
         onToggleSound={handleToggleSound}
@@ -287,18 +307,6 @@ export default function HomePage() {
 
       {/* Gamification Level & XP Bar */}
       <GamificationBar stats={gameStats} todayCompletion={todayCompletion} />
-
-      {/* 1-Month Sprint Progress Card (Always visible or in sprint view) */}
-      {(activeView === 'sprint' || activeView === 'month') && (
-        <SprintProgressCard
-          sprint={userProfile.sprint}
-          habits={habits}
-          logs={logs}
-          year={currentYear}
-          month={currentMonth}
-          userName={userProfile.userName}
-        />
-      )}
 
       {/* VIEW 1: Month Matrix (Exact Photo Analytics & Full Checkbox Grid) */}
       {activeView === 'month' && (
@@ -339,22 +347,6 @@ export default function HomePage() {
         />
       )}
 
-      {/* VIEW 3: Sprint Focus View */}
-      {activeView === 'sprint' && (
-        <HabitGrid
-          habits={habits}
-          logs={logs}
-          days={days}
-          year={currentYear}
-          month={currentMonth}
-          onToggleCheck={handleToggleCheck}
-          onAddHabitClick={() => setIsAddModalOpen(true)}
-          onDeleteHabit={handleDeleteHabit}
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-        />
-      )}
-
       {/* Modals */}
       <UserSettingsModal
         isOpen={isSettingsOpen}
@@ -379,7 +371,7 @@ export default function HomePage() {
         <div className="flex items-center gap-2">
           <span>LifeTracker for <strong>{userProfile.userName}</strong></span>
           <span>•</span>
-          <span className="text-slate-500 font-medium">1-Month Sprint Tracker (Project, Gym, Study, Health)</span>
+          <span className="text-slate-500 font-medium">Habit Matrix & Visual Discipline Engine</span>
         </div>
         <div className="flex items-center gap-2">
           <button

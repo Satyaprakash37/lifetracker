@@ -257,3 +257,4 @@ export const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
     </div>
   );
 };
+
