@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, RotateCcw, Calendar, Database, Sparkles, HelpCircle, User, Bell, LayoutGrid, CalendarRange } from 'lucide-react';
+import { Volume2, VolumeX, RotateCcw, Calendar, Database, Sparkles, HelpCircle, User, Bell, LayoutGrid, CalendarRange, Download, Check } from 'lucide-react';
 
 export type TrackerView = 'month' | 'week';
 
@@ -39,10 +39,43 @@ export const Header: React.FC<HeaderProps> = ({
   isCloudSynced,
 }) => {
   const [editingName, setEditingName] = useState(userName);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     setEditingName(userName);
   }, [userName]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeinstallprompt', (e: Event) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+      });
+      window.addEventListener('appinstalled', () => {
+        setIsInstalled(true);
+        setDeferredPrompt(null);
+      });
+    }
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choiceResult = await deferredPrompt.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+        setIsInstalled(true);
+      }
+      setDeferredPrompt(null);
+    } else {
+      alert(
+        '📱 How to install LifeTracker as an app on your phone:\n\n' +
+        '• Android (Chrome): Tap the 3 dots in top right ➔ Tap "Install app"\n' +
+        '• iPhone (Safari): Tap the Share button at bottom ➔ Tap "Add to Home Screen"\n' +
+        '• PC / Mac (Chrome/Edge): Click the Install icon in the browser address bar'
+      );
+    }
+  };
 
   const handleNameBlur = () => {
     const trimmed = editingName.trim();
@@ -106,6 +139,16 @@ export const Header: React.FC<HeaderProps> = ({
               />
             </div>
           </div>
+
+          {/* 1-Click Install App Button */}
+          <button
+            onClick={handleInstallClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-slate-900 to-indigo-900 hover:from-slate-800 hover:to-indigo-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
+            title="Install LifeTracker as an app on your phone or PC"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-300" />
+            <span>Install App</span>
+          </button>
 
           {/* Month Selector */}
           <div className="flex items-center bg-slate-100/90 rounded-xl p-1 border border-slate-200/60 shadow-inner">
